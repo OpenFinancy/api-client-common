@@ -6,7 +6,13 @@ namespace OpenFinancy\ApiClient\Common\DTO;
 
 /**
  * Base class for API Platform collection responses.
- * Handles JSON-LD format with hydra:member and pagination metadata.
+ * Handles both full JSON-LD format (hydra:member) and short JSON-LD format (member).
+ * 
+ * API Platform can return responses in two formats:
+ * - Full JSON-LD: Uses full IRIs like "hydra:member", "hydra:totalItems"
+ * - Short JSON-LD: Uses short names like "member", "totalItems" (defined in @context)
+ * 
+ * This class handles both formats automatically.
  */
 abstract class CollectionResponseDTO
 {
@@ -28,25 +34,36 @@ abstract class CollectionResponseDTO
 
     /**
      * Create DTO from API Platform JSON-LD response.
+     * Handles both full JSON-LD format (hydra:member) and short JSON-LD format (member).
      *
-     * @param array<string, mixed> $response API Platform response
+     * @param array<string, mixed> $response API Platform response (full or short JSON-LD format)
      * @return static
      */
     public static function fromApiResponse(array $response): static
     {
-        // Handle API Platform JSON-LD format
+        // Handle both full JSON-LD format (hydra:member) and short JSON-LD format (member)
+        // API Platform may return either format depending on configuration
         $members = $response['hydra:member'] ?? $response['member'] ?? [];
+        
+        // Handle totalItems in both formats
         $totalItems = $response['hydra:totalItems'] ?? $response['totalItems'] ?? count($members);
+        
+        // Handle view/pagination in both formats
         $view = $response['hydra:view'] ?? $response['view'] ?? null;
 
         $items = [];
-        foreach ($members as $member) {
-            $items[] = static::createItemFromArray($member);
+        if (is_array($members)) {
+            foreach ($members as $member) {
+                if (is_array($member)) {
+                    $items[] = static::createItemFromArray($member);
+                }
+            }
         }
 
         $nextPageUrl = null;
         $previousPageUrl = null;
-        if ($view !== null) {
+        if ($view !== null && is_array($view)) {
+            // Handle pagination links in both formats
             $nextPageUrl = $view['hydra:next'] ?? $view['next'] ?? null;
             $previousPageUrl = $view['hydra:previous'] ?? $view['previous'] ?? null;
         }
@@ -115,21 +132,44 @@ abstract class CollectionResponseDTO
 
     /**
      * Convert to array for JSON serialization.
+     * Outputs in full JSON-LD format by default (hydra:member, hydra:totalItems, hydra:view).
+     * Properly reconstructs pagination view with next/previous URLs if available.
      *
+     * @param bool $shortFormat If true, outputs in short JSON-LD format (member, totalItems, view)
      * @return array<string, mixed>
      */
-    public function toArray(): array
+    public function toArray(bool $shortFormat = false): array
     {
+        $memberKey = $shortFormat ? 'member' : 'hydra:member';
+        $totalItemsKey = $shortFormat ? 'totalItems' : 'hydra:totalItems';
+        $viewKey = $shortFormat ? 'view' : 'hydra:view';
+        $nextKey = $shortFormat ? 'next' : 'hydra:next';
+        $previousKey = $shortFormat ? 'previous' : 'hydra:previous';
+
         $result = [
-            'hydra:member' => array_map(
+            $memberKey => array_map(
                 fn($item) => method_exists($item, 'toArray') ? $item->toArray() : $item,
                 $this->items
             ),
-            'hydra:totalItems' => $this->totalItems,
+            $totalItemsKey => $this->totalItems,
         ];
 
-        if ($this->view !== null) {
-            $result['hydra:view'] = $this->view;
+        // Reconstruct view with pagination links if they exist
+        $view = $this->view ?? [];
+        if ($this->nextPageUrl !== null || $this->previousPageUrl !== null) {
+            if (!is_array($view)) {
+                $view = [];
+            }
+            if ($this->nextPageUrl !== null) {
+                $view[$nextKey] = $this->nextPageUrl;
+            }
+            if ($this->previousPageUrl !== null) {
+                $view[$previousKey] = $this->previousPageUrl;
+            }
+        }
+
+        if ($view !== []) {
+            $result[$viewKey] = $view;
         }
 
         return $result;

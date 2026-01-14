@@ -7,6 +7,7 @@ namespace OpenFinancy\ApiClient\Common;
 use OpenFinancy\ApiClient\Common\Exception\ApiPlatformClientException;
 use OpenFinancy\ApiClient\Common\Filter\FilterComponentInterface;
 use JsonException;
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
@@ -26,6 +27,7 @@ class ApiPlatformClient implements ApiPlatformClientInterface
         private readonly HttpClientInterface $httpClient,
         private readonly string $baseUri,
         private readonly ?CacheInterface $cache = null,
+        private readonly ?LoggerInterface $logger = null,
     ) {
         if ('' === trim($baseUri)) {
             throw new ApiPlatformClientException('API Platform base URI cannot be empty.');
@@ -35,16 +37,6 @@ class ApiPlatformClient implements ApiPlatformClientInterface
     public function getCollection(string $resource, ?FilterComponentInterface $filters = null, array $context = []): array
     {
         $options = $this->buildOptions($filters, $context);
-
-        // Cache crypto-historical-prices requests until end of day
-        if ($resource === 'crypto-historical-prices' && $this->cache !== null) {
-            $cacheKey = $this->buildCacheKey($resource, $options['query'] ?? []);
-
-            return $this->cache->get($cacheKey, function (ItemInterface $item) use ($resource, $options) {
-                $item->expiresAfter($this->getSecondsUntilEndOfDay());
-                return $this->request('GET', $this->buildUri($resource), $options);
-            });
-        }
 
         return $this->request('GET', $this->buildUri($resource), $options);
     }
@@ -94,21 +86,30 @@ class ApiPlatformClient implements ApiPlatformClientInterface
     {
         $options['headers'] = array_merge(self::DEFAULT_HEADERS, $options['headers'] ?? []);
 
+        // Set Content-Type header for write operations with JSON payload
+        if (isset($options['json']) && in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
+            if ($method === 'PATCH') {
+                $options['headers']['Content-Type'] = 'application/merge-patch+json';
+            } else {
+                $options['headers']['Content-Type'] = 'application/ld+json';
+            }
+        }
+
         // Log the actual HTTP request being made
         $fullUrl = $uri;
         if (isset($options['query']) && is_array($options['query'])) {
             $fullUrl .= '?' . http_build_query($options['query']);
         }
-        error_log(sprintf('[ApiPlatformClient] Making %s request to: %s', $method, $fullUrl));
+        $this->log('debug', sprintf('Making %s request to: %s', $method, $fullUrl));
 
         try {
             $response = $this->httpClient->request($method, $uri, $options);
             $statusCode = $response->getStatusCode();
             $content = $response->getContent(false);
 
-            error_log(sprintf('[ApiPlatformClient] Response status: %d, content length: %d', $statusCode, strlen($content)));
+            $this->log('debug', sprintf('Response status: %d, content length: %d', $statusCode, strlen($content)));
         } catch (TransportExceptionInterface|HttpExceptionInterface $exception) {
-            error_log(sprintf('[ApiPlatformClient] Request failed: %s', $exception->getMessage()));
+            $this->log('error', sprintf('Request failed: %s', $exception->getMessage()));
             throw new ApiPlatformClientException(
                 sprintf('Transport error while calling "%s %s": %s', $method, $uri, $exception->getMessage()),
                 null,
@@ -139,6 +140,16 @@ class ApiPlatformClient implements ApiPlatformClientInterface
         }
 
         return $decoded;
+    }
+
+    /**
+     * Log a message if logger is available.
+     */
+    private function log(string $level, string $message, array $context = []): void
+    {
+        if ($this->logger !== null) {
+            $this->logger->log($level, $message, $context);
+        }
     }
 
     private function buildUri(string $resource, ?string $id = null): string
@@ -179,33 +190,6 @@ class ApiPlatformClient implements ApiPlatformClientInterface
         }
 
         return $options;
-    }
-
-    /**
-     * Build cache key from resource and query parameters
-     */
-    private function buildCacheKey(string $resource, array $query): string
-    {
-        // Sort query parameters for consistent cache keys
-        ksort($query);
-
-        // Build a hash of the query parameters
-        $queryHash = md5(http_build_query($query));
-
-        return sprintf('api_platform_%s_%s', $resource, $queryHash);
-    }
-
-    /**
-     * Calculate seconds until end of day (midnight)
-     */
-    private function getSecondsUntilEndOfDay(): int
-    {
-        $now = new \DateTime();
-        $endOfDay = (clone $now)->setTime(23, 59, 59);
-        $secondsUntilEndOfDay = $endOfDay->getTimestamp() - $now->getTimestamp();
-
-        // Ensure at least 1 second to avoid immediate expiration
-        return max(1, $secondsUntilEndOfDay);
     }
 }
 
