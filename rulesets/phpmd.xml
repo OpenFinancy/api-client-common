@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<ruleset name="PHPMD rule set for OpenFinancy"
+         xmlns="http://pmd.sf.net/ruleset/1.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 https://pmd.sourceforge.io/ruleset_xml_schema.xsd"
+         xsi:noNamespaceSchemaLocation="https://pmd.sourceforge.io/ruleset_xml_schema.xsd">
+
+    <description>
+        PHPMD rule set for OpenFinancy projects (Musicarr-style)
+    </description>
+
+    <rule ref="rulesets/codesize.xml">
+        <exclude name="ExcessiveClassComplexity"/>
+        <exclude name="ExcessiveMethodLength"/>
+        <exclude name="ExcessivePublicCount"/>
+        <exclude name="TooManyFields"/>
+        <exclude name="TooManyMethods"/>
+        <exclude name="TooManyPublicMethods"/>
+        <exclude name="CyclomaticComplexity"/>
+        <exclude name="NPathComplexity"/>
+        <exclude name="ExcessiveParameterList"/>
+    </rule>
+    <rule ref="rulesets/cleancode.xml">
+        <exclude name="StaticAccess"/>
+        <exclude name="ElseExpression"/>
+        <exclude name="BooleanArgumentFlag"/>
+        <exclude name="MissingImport"/>
+    </rule>
+
+    <rule ref="rulesets/controversial.xml">
+        <exclude name="CamelCaseMethodName"/>
+        <exclude name="CamelCaseParameterName"/>
+        <exclude name="CamelCasePropertyName"/>
+        <exclude name="CamelCaseVariableName"/>
+    </rule>
+
+    <rule ref="rulesets/design.xml">
+        <exclude name="CouplingBetweenObjects"/>
+        <exclude name="DepthOfInheritance"/>
+        <exclude name="NumberOfChildren"/>
+    </rule>
+
+    <rule ref="rulesets/naming.xml">
+        <exclude name="LongVariable"/>
+        <exclude name="ShortVariable"/>
+        <exclude name="LongClassName"/>
+    </rule>
+
+    <rule ref="rulesets/unusedcode.xml"/>
+    <rule ref="rulesets/cleancode.xml/IfStatementAssignment"/>
+</ruleset>

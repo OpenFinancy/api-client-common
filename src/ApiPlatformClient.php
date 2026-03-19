@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace OpenFinancy\ApiClient\Common;
 
+use JsonException;
 use OpenFinancy\ApiClient\Common\Exception\ApiPlatformClientException;
 use OpenFinancy\ApiClient\Common\Filter\FilterComponentInterface;
-use JsonException;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -29,9 +28,14 @@ class ApiPlatformClient implements ApiPlatformClientInterface
         private readonly ?CacheInterface $cache = null,
         private readonly ?LoggerInterface $logger = null,
     ) {
-        if ('' === trim($baseUri)) {
+        if ('' === mb_trim($baseUri)) {
             throw new ApiPlatformClientException('API Platform base URI cannot be empty.');
         }
+    }
+
+    public function getCache(): ?CacheInterface
+    {
+        return $this->cache;
     }
 
     public function getCollection(string $resource, ?FilterComponentInterface $filters = null, array $context = []): array
@@ -87,8 +91,8 @@ class ApiPlatformClient implements ApiPlatformClientInterface
         $options['headers'] = array_merge(self::DEFAULT_HEADERS, $options['headers'] ?? []);
 
         // Set Content-Type header for write operations with JSON payload
-        if (isset($options['json']) && in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
-            if ($method === 'PATCH') {
+        if (isset($options['json']) && \in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
+            if ('PATCH' === $method) {
                 $options['headers']['Content-Type'] = 'application/merge-patch+json';
             } else {
                 $options['headers']['Content-Type'] = 'application/ld+json';
@@ -97,46 +101,35 @@ class ApiPlatformClient implements ApiPlatformClientInterface
 
         // Log the actual HTTP request being made
         $fullUrl = $uri;
-        if (isset($options['query']) && is_array($options['query'])) {
+        if (isset($options['query']) && \is_array($options['query'])) {
             $fullUrl .= '?' . http_build_query($options['query']);
         }
-        $this->log('debug', sprintf('Making %s request to: %s', $method, $fullUrl));
+        $this->log('debug', \sprintf('Making %s request to: %s', $method, $fullUrl));
 
         try {
             $response = $this->httpClient->request($method, $uri, $options);
             $statusCode = $response->getStatusCode();
             $content = $response->getContent(false);
 
-            $this->log('debug', sprintf('Response status: %d, content length: %d', $statusCode, strlen($content)));
+            $this->log('debug', \sprintf('Response status: %d, content length: %d', $statusCode, mb_strlen($content)));
         } catch (TransportExceptionInterface|HttpExceptionInterface $exception) {
-            $this->log('error', sprintf('Request failed: %s', $exception->getMessage()));
-            throw new ApiPlatformClientException(
-                sprintf('Transport error while calling "%s %s": %s', $method, $uri, $exception->getMessage()),
-                null,
-                $exception,
-            );
+            $this->log('error', \sprintf('Request failed: %s', $exception->getMessage()));
+            throw new ApiPlatformClientException(\sprintf('Transport error while calling "%s %s": %s', $method, $uri, $exception->getMessage()), null, $exception);
         }
 
         if ($statusCode >= 400) {
-            throw new ApiPlatformClientException(
-                sprintf('API Platform request to "%s %s" failed with status %d: %s', $method, $uri, $statusCode, $content),
-                $statusCode,
-            );
+            throw new ApiPlatformClientException(\sprintf('API Platform request to "%s %s" failed with status %d: %s', $method, $uri, $statusCode, $content), $statusCode);
         }
 
-        if ('' === trim($content)) {
+        if ('' === mb_trim($content)) {
             return [];
         }
 
         try {
             /** @var array<mixed> $decoded */
-            $decoded = json_decode($content, true, flags: JSON_THROW_ON_ERROR);
+            $decoded = json_decode($content, true, flags: \JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
-            throw new ApiPlatformClientException(
-                sprintf('Unable to decode API Platform response from "%s %s": %s', $method, $uri, $exception->getMessage()),
-                $statusCode,
-                $exception,
-            );
+            throw new ApiPlatformClientException(\sprintf('Unable to decode API Platform response from "%s %s": %s', $method, $uri, $exception->getMessage()), $statusCode, $exception);
         }
 
         return $decoded;
@@ -147,28 +140,28 @@ class ApiPlatformClient implements ApiPlatformClientInterface
      */
     private function log(string $level, string $message, array $context = []): void
     {
-        if ($this->logger !== null) {
+        if (null !== $this->logger) {
             $this->logger->log($level, $message, $context);
         }
     }
 
     private function buildUri(string $resource, ?string $id = null): string
     {
-        $path = trim($resource, '/');
+        $path = mb_trim($resource, '/');
 
         if ('' === $path) {
             throw new ApiPlatformClientException('Resource path cannot be empty.');
         }
 
-        if (null !== $id && '' === trim($id)) {
+        if (null !== $id && '' === mb_trim($id)) {
             throw new ApiPlatformClientException('Resource identifier cannot be empty.');
         }
 
         if (null !== $id) {
-            $path .= '/' . rawurlencode(trim($id, '/'));
+            $path .= '/' . rawurlencode(mb_trim($id, '/'));
         }
 
-        return sprintf('%s/%s', rtrim($this->baseUri, '/'), $path);
+        return \sprintf('%s/%s', mb_rtrim($this->baseUri, '/'), $path);
     }
 
     /**
@@ -180,7 +173,7 @@ class ApiPlatformClient implements ApiPlatformClientInterface
         $query = $context['query'] ?? [];
 
         if ($filters instanceof FilterComponentInterface) {
-            $query = $filters->apply(is_array($query) ? $query : []);
+            $query = $filters->apply(\is_array($query) ? $query : []);
         }
 
         if ([] !== $query) {
@@ -192,5 +185,3 @@ class ApiPlatformClient implements ApiPlatformClientInterface
         return $options;
     }
 }
-
-

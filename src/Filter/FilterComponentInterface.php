@@ -14,11 +14,9 @@ interface FilterComponentInterface
     /**
      * Apply the filter to the provided set of query parameters.
      *
-     * @param array<string, scalar|list<scalar>> $parameters
+     * @param array<string, scalar|list<scalar>|null> $parameters
      *
-     * @return array<string, scalar|list<scalar>>
+     * @return array<string, scalar|list<scalar>|null>
      */
     public function apply(array $parameters = []): array;
 }
-
-

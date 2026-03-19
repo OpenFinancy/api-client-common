@@ -7,21 +7,21 @@ namespace OpenFinancy\ApiClient\Common\DTO;
 /**
  * Base class for API Platform collection responses.
  * Handles both full JSON-LD format (hydra:member) and short JSON-LD format (member).
- * 
+ *
  * API Platform can return responses in two formats:
  * - Full JSON-LD: Uses full IRIs like "hydra:member", "hydra:totalItems"
  * - Short JSON-LD: Uses short names like "member", "totalItems" (defined in @context)
- * 
+ *
  * This class handles both formats automatically.
  */
 abstract class CollectionResponseDTO
 {
     /**
-     * @param array<mixed> $items Array of item DTOs
-     * @param int $totalItems Total number of items
-     * @param array<string, mixed>|null $view Pagination view metadata
-     * @param string|null $nextPageUrl Next page URL if available
-     * @param string|null $previousPageUrl Previous page URL if available
+     * @param array<mixed>              $items           Array of item DTOs
+     * @param int                       $totalItems      Total number of items
+     * @param array<string, mixed>|null $view            Pagination view metadata
+     * @param string|null               $nextPageUrl     Next page URL if available
+     * @param string|null               $previousPageUrl Previous page URL if available
      */
     public function __construct(
         public readonly array $items,
@@ -37,24 +37,23 @@ abstract class CollectionResponseDTO
      * Handles both full JSON-LD format (hydra:member) and short JSON-LD format (member).
      *
      * @param array<string, mixed> $response API Platform response (full or short JSON-LD format)
-     * @return static
      */
     public static function fromApiResponse(array $response): static
     {
         // Handle both full JSON-LD format (hydra:member) and short JSON-LD format (member)
         // API Platform may return either format depending on configuration
         $members = $response['hydra:member'] ?? $response['member'] ?? [];
-        
+
         // Handle totalItems in both formats
-        $totalItems = $response['hydra:totalItems'] ?? $response['totalItems'] ?? count($members);
-        
+        $totalItems = $response['hydra:totalItems'] ?? $response['totalItems'] ?? (\is_array($members) ? \count($members) : 0);
+
         // Handle view/pagination in both formats
         $view = $response['hydra:view'] ?? $response['view'] ?? null;
 
         $items = [];
-        if (is_array($members)) {
+        if (\is_array($members)) {
             foreach ($members as $member) {
-                if (is_array($member)) {
+                if (\is_array($member)) {
                     $items[] = static::createItemFromArray($member);
                 }
             }
@@ -62,7 +61,7 @@ abstract class CollectionResponseDTO
 
         $nextPageUrl = null;
         $previousPageUrl = null;
-        if ($view !== null && is_array($view)) {
+        if (null !== $view && \is_array($view)) {
             // Handle pagination links in both formats
             $nextPageUrl = $view['hydra:next'] ?? $view['next'] ?? null;
             $previousPageUrl = $view['hydra:previous'] ?? $view['previous'] ?? null;
@@ -76,7 +75,6 @@ abstract class CollectionResponseDTO
      * Must be implemented by subclasses.
      *
      * @param array<string, mixed> $data
-     * @return mixed
      */
     abstract protected static function createItemFromArray(array $data): mixed;
 
@@ -103,7 +101,7 @@ abstract class CollectionResponseDTO
      */
     public function hasNextPage(): bool
     {
-        return $this->nextPageUrl !== null;
+        return null !== $this->nextPageUrl;
     }
 
     /**
@@ -111,7 +109,7 @@ abstract class CollectionResponseDTO
      */
     public function hasPreviousPage(): bool
     {
-        return $this->previousPageUrl !== null;
+        return null !== $this->previousPageUrl;
     }
 
     /**
@@ -136,6 +134,7 @@ abstract class CollectionResponseDTO
      * Properly reconstructs pagination view with next/previous URLs if available.
      *
      * @param bool $shortFormat If true, outputs in short JSON-LD format (member, totalItems, view)
+     *
      * @return array<string, mixed>
      */
     public function toArray(bool $shortFormat = false): array
@@ -148,7 +147,7 @@ abstract class CollectionResponseDTO
 
         $result = [
             $memberKey => array_map(
-                fn($item) => method_exists($item, 'toArray') ? $item->toArray() : $item,
+                static fn (mixed $item): mixed => \is_object($item) && method_exists($item, 'toArray') ? $item->toArray() : $item,
                 $this->items
             ),
             $totalItemsKey => $this->totalItems,
@@ -156,23 +155,22 @@ abstract class CollectionResponseDTO
 
         // Reconstruct view with pagination links if they exist
         $view = $this->view ?? [];
-        if ($this->nextPageUrl !== null || $this->previousPageUrl !== null) {
-            if (!is_array($view)) {
+        if (null !== $this->nextPageUrl || null !== $this->previousPageUrl) {
+            if (!\is_array($view)) {
                 $view = [];
             }
-            if ($this->nextPageUrl !== null) {
+            if (null !== $this->nextPageUrl) {
                 $view[$nextKey] = $this->nextPageUrl;
             }
-            if ($this->previousPageUrl !== null) {
+            if (null !== $this->previousPageUrl) {
                 $view[$previousKey] = $this->previousPageUrl;
             }
         }
 
-        if ($view !== []) {
+        if ([] !== $view) {
             $result[$viewKey] = $view;
         }
 
         return $result;
     }
 }
-

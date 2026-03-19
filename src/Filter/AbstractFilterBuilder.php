@@ -59,22 +59,20 @@ abstract class AbstractFilterBuilder implements FilterComponentInterface
 
     /**
      * Adds a date filter, supporting ApiPlatform date filter syntax.
-     *
-     * @param DateTimeInterface|string $value
      */
     protected function addDateFilter(string $field, string $comparison, DateTimeInterface|string $value): static
     {
         $allowedComparisons = ['before', 'strictly_before', 'after', 'strictly_after'];
 
-        if (!in_array($comparison, $allowedComparisons, true)) {
-            throw new InvalidArgumentException(sprintf('Invalid date comparison "%s".', $comparison));
+        if (!\in_array($comparison, $allowedComparisons, true)) {
+            throw new InvalidArgumentException(\sprintf('Invalid date comparison "%s".', $comparison));
         }
 
         if ($value instanceof DateTimeInterface) {
             $value = $this->formatDate($value);
         }
 
-        $this->addKeyValue(sprintf('%s[%s]', $field, $comparison), $value);
+        $this->addKeyValue(\sprintf('%s[%s]', $field, $comparison), $value);
 
         return $this;
     }
@@ -87,5 +85,3 @@ abstract class AbstractFilterBuilder implements FilterComponentInterface
         return $withTime ? $dateTime->format(DateTimeInterface::ATOM) : $dateTime->format('Y-m-d');
     }
 }
-
-

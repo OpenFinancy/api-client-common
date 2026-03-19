@@ -44,5 +44,3 @@ final class FilterComposite implements FilterComponentInterface
         return [] === $this->components;
     }
 }
-
-

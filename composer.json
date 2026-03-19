@@ -11,6 +11,10 @@
         "symfony/cache-contracts": "^3.0"
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.86",
+        "phpmd/phpmd": "^2.15",
+        "phpro/grumphp": "^2.14",
+        "phpstan/phpstan": "^1.12",
         "phpunit/phpunit": "^12.4.3"
     },
     "autoload": {
@@ -24,6 +28,16 @@
         }
     },
     "config": {
+        "allow-plugins": {
+            "phpro/grumphp": true
+        },
         "sort-packages": true
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --no-coverage",
+        "test:coverage": "vendor/bin/phpunit --coverage-text",
+        "analyse": "vendor/bin/phpstan analyse -c rulesets/phpstan.neon",
+        "lint": "vendor/bin/php-cs-fixer fix --dry-run --diff --allow-risky=yes --config=rulesets/php-cs-fixer.php",
+        "format": "vendor/bin/php-cs-fixer fix --allow-risky=yes --config=rulesets/php-cs-fixer.php"
     }
 }

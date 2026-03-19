@@ -15,9 +15,17 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
+
     <source>
         <include>
             <directory suffix=".php">src</directory>
         </include>
     </source>
+    <coverage>
+        <report>
+            <html outputDirectory="var/coverage" lowUpperBound="50" highLowerBound="90"/>
+            <text outputFile="php://stdout"/>
+            <clover outputFile="var/coverage/clover.xml"/>
+        </report>
+    </coverage>
 </phpunit>

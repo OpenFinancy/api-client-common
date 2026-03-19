@@ -15,10 +15,10 @@ final class OrderFilter implements FilterComponentInterface
 
     public function __construct(private readonly string $field, string $direction)
     {
-        $direction = strtolower($direction);
+        $direction = mb_strtolower($direction);
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
-            throw new InvalidArgumentException(sprintf('Invalid sort direction "%s". Allowed values: asc, desc.', $direction));
+        if (!\in_array($direction, ['asc', 'desc'], true)) {
+            throw new InvalidArgumentException(\sprintf('Invalid sort direction "%s". Allowed values: asc, desc.', $direction));
         }
 
         $this->direction = $direction;
@@ -26,10 +26,8 @@ final class OrderFilter implements FilterComponentInterface
 
     public function apply(array $parameters = []): array
     {
-        $parameters[sprintf('order[%s]', $this->field)] = $this->direction;
+        $parameters[\sprintf('order[%s]', $this->field)] = $this->direction;
 
         return $parameters;
     }
 }
-
-

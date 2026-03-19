@@ -37,5 +37,3 @@ final class PaginationFilter implements FilterComponentInterface
         return $parameters;
     }
 }
-
-

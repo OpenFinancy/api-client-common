@@ -82,5 +82,3 @@ abstract class AbstractApiResourceClient
      */
     abstract protected function getResourcePath(): string;
 }
-
-

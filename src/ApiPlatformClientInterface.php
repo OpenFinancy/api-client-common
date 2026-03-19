@@ -14,17 +14,12 @@ interface ApiPlatformClientInterface
     /**
      * Fetch a collection resource, optionally applying composite filters and additional HTTP context.
      *
-     * @param non-empty-string $resource
-     *
      * @return array<mixed>
      */
     public function getCollection(string $resource, ?FilterComponentInterface $filters = null, array $context = []): array;
 
     /**
      * Fetch a single item resource.
-     *
-     * @param non-empty-string $resource
-     * @param non-empty-string $id
      *
      * @return array<mixed>
      */
@@ -33,8 +28,7 @@ interface ApiPlatformClientInterface
     /**
      * Create a new resource.
      *
-     * @param non-empty-string $resource
-     * @param array<mixed>     $payload
+     * @param array<mixed> $payload
      *
      * @return array<mixed>
      */
@@ -43,9 +37,7 @@ interface ApiPlatformClientInterface
     /**
      * Replace a resource using PUT semantics.
      *
-     * @param non-empty-string $resource
-     * @param non-empty-string $id
-     * @param array<mixed>     $payload
+     * @param array<mixed> $payload
      *
      * @return array<mixed>
      */
@@ -54,9 +46,7 @@ interface ApiPlatformClientInterface
     /**
      * Partially update a resource using PATCH semantics.
      *
-     * @param non-empty-string $resource
-     * @param non-empty-string $id
-     * @param array<mixed>     $payload
+     * @param array<mixed> $payload
      *
      * @return array<mixed>
      */
@@ -64,11 +54,6 @@ interface ApiPlatformClientInterface
 
     /**
      * Delete a resource.
-     *
-     * @param non-empty-string $resource
-     * @param non-empty-string $id
      */
     public function deleteItem(string $resource, string $id, array $context = []): void;
 }
-
-

@@ -9,9 +9,6 @@ namespace OpenFinancy\ApiClient\Common\Filter;
  */
 final class KeyValueFilter implements FilterComponentInterface
 {
-    /**
-     * @param scalar|list<scalar>|null $value
-     */
     public function __construct(
         private readonly string $key,
         private readonly mixed $value,
@@ -19,20 +16,23 @@ final class KeyValueFilter implements FilterComponentInterface
     ) {
     }
 
+    /**
+     * @return array<string, array<int, bool|float|int|string>|bool|float|int|string|null>
+     */
     public function apply(array $parameters = []): array
     {
         if (null === $this->value && false === $this->allowNull) {
             return $parameters;
         }
 
-        if (is_array($this->value) && [] === $this->value) {
+        if (\is_array($this->value) && [] === $this->value) {
             return $parameters;
         }
 
-        $parameters[$this->key] = $this->value;
+        /** @var array<int, bool|float|int|string>|bool|float|int|string|null $value */
+        $value = $this->value;
+        $parameters[$this->key] = $value;
 
         return $parameters;
     }
 }
-
-

@@ -8,6 +8,7 @@ use OpenFinancy\ApiClient\Common\ApiPlatformClient;
 use OpenFinancy\ApiClient\Common\Exception\ApiPlatformClientException;
 use OpenFinancy\ApiClient\Common\Filter\FilterComponentInterface;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
@@ -25,7 +26,7 @@ final class ApiPlatformClientTest extends TestCase
             ->willReturn(['symbol' => 'BTC']);
 
         $response->expects(self::once())->method('getStatusCode')->willReturn(200);
-        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['hydra:member' => []], JSON_THROW_ON_ERROR));
+        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['hydra:member' => []], \JSON_THROW_ON_ERROR));
 
         $httpClient->expects(self::once())
             ->method('request')
@@ -43,10 +44,9 @@ final class ApiPlatformClientTest extends TestCase
     public function testGetCollectionThrowsOnHttpError(): void
     {
         $httpClient = $this->createMock(HttpClientInterface::class);
-        $response = $this->createMock(ResponseInterface::class);
-
+        $response = $this->createStub(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(502);
-        $response->method('getContent')->with(false)->willReturn('error');
+        $response->method('getContent')->willReturn('error');
 
         $httpClient->expects(self::once())
             ->method('request')
@@ -65,7 +65,7 @@ final class ApiPlatformClientTest extends TestCase
 
     public function testConstructorRejectsEmptyBaseUri(): void
     {
-        $httpClient = $this->createMock(HttpClientInterface::class);
+        $httpClient = $this->createStub(HttpClientInterface::class);
 
         $this->expectException(ApiPlatformClientException::class);
         $this->expectExceptionMessage('API Platform base URI cannot be empty.');
@@ -81,7 +81,7 @@ final class ApiPlatformClientTest extends TestCase
         $payload = ['name' => 'Test Resource'];
 
         $response->expects(self::once())->method('getStatusCode')->willReturn(201);
-        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['@id' => '/resources/1', '@type' => 'Resource'], JSON_THROW_ON_ERROR));
+        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['@id' => '/resources/1', '@type' => 'Resource'], \JSON_THROW_ON_ERROR));
 
         $httpClient->expects(self::once())
             ->method('request')
@@ -108,7 +108,7 @@ final class ApiPlatformClientTest extends TestCase
         $payload = ['name' => 'Updated Resource'];
 
         $response->expects(self::once())->method('getStatusCode')->willReturn(200);
-        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['@id' => '/resources/1', '@type' => 'Resource'], JSON_THROW_ON_ERROR));
+        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['@id' => '/resources/1', '@type' => 'Resource'], \JSON_THROW_ON_ERROR));
 
         $httpClient->expects(self::once())
             ->method('request')
@@ -135,7 +135,7 @@ final class ApiPlatformClientTest extends TestCase
         $payload = ['name' => 'Patched Resource'];
 
         $response->expects(self::once())->method('getStatusCode')->willReturn(200);
-        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['@id' => '/resources/1', '@type' => 'Resource'], JSON_THROW_ON_ERROR));
+        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode(['@id' => '/resources/1', '@type' => 'Resource'], \JSON_THROW_ON_ERROR));
 
         $httpClient->expects(self::once())
             ->method('request')
@@ -154,6 +154,40 @@ final class ApiPlatformClientTest extends TestCase
         self::assertSame(['@id' => '/resources/1', '@type' => 'Resource'], $result);
     }
 
+    public function testDeleteItemSendsDeleteRequestAndHandlesEmptyResponse(): void
+    {
+        $httpClient = $this->createMock(HttpClientInterface::class);
+        $response = $this->createMock(ResponseInterface::class);
+
+        $response->expects(self::once())->method('getStatusCode')->willReturn(204);
+        $response->expects(self::once())->method('getContent')->with(false)->willReturn('');
+
+        $httpClient->expects(self::once())
+            ->method('request')
+            ->with('DELETE', 'https://api.example/resources/1', [
+                'headers' => ['Accept' => 'application/ld+json'],
+            ])
+            ->willReturn($response);
+
+        $client = new ApiPlatformClient($httpClient, 'https://api.example');
+
+        // Should not throw
+        $client->deleteItem('resources', '1');
+        $this->addToAssertionCount(1);
+    }
+
+    public function testBuildUriValidatesResourceAndId(): void
+    {
+        $httpClient = $this->createStub(HttpClientInterface::class);
+        $client = new ApiPlatformClient($httpClient, 'https://api.example');
+
+        $this->expectException(ApiPlatformClientException::class);
+        $this->expectExceptionMessage('Resource path cannot be empty.');
+        (new ReflectionClass($client))
+            ->getMethod('buildUri')
+            ->invoke($client, '');
+    }
+
     public function testGetCollectionHandlesShortJsonLdFormat(): void
     {
         $httpClient = $this->createMock(HttpClientInterface::class);
@@ -170,7 +204,7 @@ final class ApiPlatformClientTest extends TestCase
         ];
 
         $response->expects(self::once())->method('getStatusCode')->willReturn(200);
-        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode($shortJsonLdResponse, JSON_THROW_ON_ERROR));
+        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode($shortJsonLdResponse, \JSON_THROW_ON_ERROR));
 
         $httpClient->expects(self::once())
             ->method('request')
@@ -201,7 +235,7 @@ final class ApiPlatformClientTest extends TestCase
         ];
 
         $response->expects(self::once())->method('getStatusCode')->willReturn(200);
-        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode($shortJsonLdResponse, JSON_THROW_ON_ERROR));
+        $response->expects(self::once())->method('getContent')->with(false)->willReturn(json_encode($shortJsonLdResponse, \JSON_THROW_ON_ERROR));
 
         $httpClient->expects(self::once())
             ->method('request')

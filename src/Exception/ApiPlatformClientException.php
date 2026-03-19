@@ -25,5 +25,3 @@ final class ApiPlatformClientException extends RuntimeException
         return $this->statusCode;
     }
 }
-
-
