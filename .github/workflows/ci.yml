@@ -34,8 +34,18 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
-      - name: Setup Composer GitHub token
-        run: composer config -g github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
+      - name: Start SSH agent for OpenFinancy dependencies
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.OPENFINANCY_SSH_PRIVATE_KEY }}
+
+      - name: Add GitHub to known_hosts
+        run: ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Force Composer VCS clones to use SSH
+        run: |
+          git config --global url."git@github.com:OpenFinancy/".insteadOf "https://github.com/OpenFinancy/"
+          git config --global url."git@github.com:openfinancy/".insteadOf "https://github.com/openfinancy/"
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
