@@ -8,9 +8,11 @@ use OpenFinancy\ApiClient\Common\ApiPlatformClientInterface;
 use OpenFinancy\ApiClient\Common\Exception\ApiPlatformClientException;
 use OpenFinancy\ApiClient\Common\Filter\FilterComponentInterface;
 use OpenFinancy\ApiClient\Common\Resource\AbstractApiResourceClient;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
+#[AllowMockObjectsWithoutExpectations]
 final class AbstractApiResourceClientTest extends TestCase
 {
     public function testDelegatesCollectionAndItemOperationsToClient(): void
