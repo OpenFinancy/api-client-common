@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OpenFinancy\ApiClient\Common\Tests;
+namespace OpenFinancy\ApiClient\Common\Tests\Unit;
 
 use OpenFinancy\ApiClient\Common\ApiPlatformClient;
 use OpenFinancy\ApiClient\Common\Exception\ApiPlatformClientException;

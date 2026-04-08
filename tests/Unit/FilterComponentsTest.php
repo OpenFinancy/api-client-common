@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OpenFinancy\ApiClient\Common\Tests;
+namespace OpenFinancy\ApiClient\Common\Tests\Unit;
 
 use DateTimeImmutable;
 use InvalidArgumentException;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OpenFinancy\ApiClient\Common\Tests;
+namespace OpenFinancy\ApiClient\Common\Tests\Unit;
 
 use OpenFinancy\ApiClient\Common\DTO\CollectionResponseDTO;
 use PHPUnit\Framework\TestCase;
